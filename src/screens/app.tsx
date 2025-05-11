@@ -9,6 +9,7 @@ import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
 import { CircleButton } from "@/components/circle-button";
 import { EmojiPicker } from "@/components/emoji-picker";
+import { EmojiList } from "@/components/emoji-list";
 
 const PlaceholderImage = require("@/assets/images/background-image.png") as ImageSourcePropType;
 
@@ -16,6 +17,10 @@ const App: FC = () => {
   const [selectedImage, setSelectedImage] = useState<null | string>(null);
   const [showAppOptions, setShowAppOptions] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | null>(
+    null,
+  );
+
   
   const onModalClose = () => {
     setIsModalVisible(false);
@@ -53,6 +58,7 @@ const App: FC = () => {
         <ImageViewer placeholderImageSource={PlaceholderImage} selectedImage={selectedImage} />
       </View>
       <EmojiPicker isVisible={isModalVisible} onClose={onModalClose}>
+        <EmojiList onSelect={setPickedEmoji} onCloseModal={onModalClose} />
       </EmojiPicker>
       {showAppOptions ? (
         <View style={styles.optionsContainer}>
