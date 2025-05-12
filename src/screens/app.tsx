@@ -1,18 +1,19 @@
-import { type FC, useState } from "react";
-import { StyleSheet, type ImageSourcePropType, View } from "react-native";
-import { registerRootComponent } from "expo";
-import { StatusBar } from "expo-status-bar";
-import * as ImagePicker from "expo-image-picker";
-
-import { ImageViewer } from "@/components/image-viewer";
-import { Button } from "@/components/button";
-import { IconButton } from "@/components/icon-button";
-import { CircleButton } from "@/components/circle-button";
-import { EmojiPicker } from "@/components/emoji-picker";
-import { EmojiList } from "@/components/emoji-list";
-import { EmojiSticker } from "@/components/emoji-sticker";
+import { useRef, useState, type FC } from "react";
+import { StyleSheet, View, type ImageSourcePropType } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import * as MediaLibrary from 'expo-media-library';
+import { registerRootComponent } from "expo";
+import * as ImagePicker from "expo-image-picker";
+import * as MediaLibrary from "expo-media-library";
+import { StatusBar } from "expo-status-bar";
+import { captureRef } from "react-native-view-shot";
+
+import { Button } from "@/components/button";
+import { CircleButton } from "@/components/circle-button";
+import { EmojiList } from "@/components/emoji-list";
+import { EmojiPicker } from "@/components/emoji-picker";
+import { EmojiSticker } from "@/components/emoji-sticker";
+import { IconButton } from "@/components/icon-button";
+import { ImageViewer } from "@/components/image-viewer";
 
 const PlaceholderImage = require("@/assets/images/background-image.png") as ImageSourcePropType;
 
@@ -24,6 +25,7 @@ const App: FC = () => {
     null,
   );
   const [status, requestPermission] = MediaLibrary.usePermissions();
+  const imageRef = useRef<View>(null);
 
   if (status === null) {
     void requestPermission();
@@ -42,7 +44,19 @@ const App: FC = () => {
   };
 
   const onSaveImageAsync = async () => {
-    // 後ほど追加します
+    try {
+      const localUri = await captureRef(imageRef, {
+        height: 440,
+        quality: 1,
+      });
+
+      await MediaLibrary.saveToLibraryAsync(localUri);
+      if (localUri) {
+        alert("保存しました!");
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
   
   const pickImageAsync = async () => {
@@ -62,13 +76,15 @@ const App: FC = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.imageContainer}>
-        <ImageViewer 
-          placeholderImageSource={PlaceholderImage} 
-          selectedImage={selectedImage} 
-        />
-        {pickedEmoji && (
-          <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />
-        )}
+        <View ref={imageRef} collapsable={false}>
+          <ImageViewer 
+            placeholderImageSource={PlaceholderImage} 
+            selectedImage={selectedImage} 
+          />
+          {pickedEmoji && (
+            <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />
+          )}
+        </View>
       </View>
       <EmojiPicker isVisible={isModalVisible} onClose={onModalClose}>
         <EmojiList onSelect={setPickedEmoji} onCloseModal={onModalClose} />
