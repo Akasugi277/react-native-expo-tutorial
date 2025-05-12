@@ -129,7 +129,7 @@ const App: FC = () => {
           <Button label="この写真を使用" />
         </View>
       )}
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </GestureHandlerRootView>
   );
 };
