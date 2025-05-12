@@ -12,6 +12,7 @@ import { EmojiPicker } from "@/components/emoji-picker";
 import { EmojiList } from "@/components/emoji-list";
 import { EmojiSticker } from "@/components/emoji-sticker";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as MediaLibrary from 'expo-media-library';
 
 const PlaceholderImage = require("@/assets/images/background-image.png") as ImageSourcePropType;
 
@@ -22,7 +23,11 @@ const App: FC = () => {
   const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | null>(
     null,
   );
+  const [status, requestPermission] = MediaLibrary.usePermissions();
 
+  if (status === null) {
+    void requestPermission();
+  }
   
   const onModalClose = () => {
     setIsModalVisible(false);
