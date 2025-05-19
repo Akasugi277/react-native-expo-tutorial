@@ -22,22 +22,27 @@ const App: FC = () => {
   const [selectedImage, setSelectedImage] = useState<null | string>(null);
   const [showAppOptions, setShowAppOptions] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | null>(
-    null,
-  );
-  const [status, requestPermission] = MediaLibrary.usePermissions();
-  const imageRef = useRef(null);
+  const [pickedEmoji, setPickedEmoji] = useState<ImageSourcePropType | null>(null);
+  const [mediaStatus, requestMediaPermission] = MediaLibrary.usePermissions();
+  const [cameraStatus, requestCameraPermission] = ImagePicker.useCameraPermissions();
+  const imageRef = useRef<View>(null);
 
-  if (status === null) {
-    void requestPermission();
+  // Initialize permissions
+  if (mediaStatus === null) {
+    void requestMediaPermission();
   }
-  
+  if (cameraStatus === null) {
+    void requestCameraPermission();
+  }
+
   const onModalClose = () => {
     setIsModalVisible(false);
   };
-  
+
   const onReset = () => {
     setShowAppOptions(false);
+    setSelectedImage(null);
+    setPickedEmoji(null);
   };
 
   const onAddSticker = () => {
@@ -54,11 +59,9 @@ const App: FC = () => {
           });
 
           await MediaLibrary.saveToLibraryAsync(localUri);
-          if (localUri) {
-            alert("保存しました!");
-          }
+          alert("保存しました!");
         } catch (e) {
-          console.log(e);
+          console.error(e);
         }
       }
     } else {
@@ -68,19 +71,39 @@ const App: FC = () => {
             quality: 0.95,
             width: 320,
             height: 440,
-            });
-
-            const link = document.createElement("a");
+          });
+          const link = document.createElement("a");
           link.download = "sticker-smash.jpeg";
           link.href = dataUrl;
           link.click();
         } catch (e) {
-          console.log(e);
+          console.error(e);
         }
       }
     }
   };
-  
+
+  // 新機能: カメラで撮影
+  const takePhotoAsync = async () => {
+    if (!cameraStatus?.granted) {
+      const permission = await requestCameraPermission();
+      if (!permission.granted) {
+        alert("カメラの権限が必要です");
+        return;
+      }
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+      setShowAppOptions(true);
+    } else {
+      alert("写真が撮影されませんでした");
+    }
+  };
+
   const pickImageAsync = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
@@ -99,13 +122,11 @@ const App: FC = () => {
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.imageContainer}>
         <View ref={imageRef} collapsable={false}>
-          <ImageViewer 
-            placeholderImageSource={PlaceholderImage} 
-            selectedImage={selectedImage} 
+          <ImageViewer
+            placeholderImageSource={PlaceholderImage}
+            selectedImage={selectedImage}
           />
-          {pickedEmoji && (
-            <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />
-          )}
+          {pickedEmoji && <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />}
         </View>
       </View>
       <EmojiPicker isVisible={isModalVisible} onClose={onModalClose}>
@@ -116,17 +137,13 @@ const App: FC = () => {
           <View style={styles.optionsRow}>
             <IconButton icon="refresh" label="リセット" onPress={onReset} />
             <CircleButton onPress={onAddSticker} />
-            <IconButton
-              icon="save-alt"
-              label="保存"
-                onPress={onSaveImageAsync}
-            />
+            <IconButton icon="save-alt" label="保存" onPress={onSaveImageAsync} />
           </View>
         </View>
       ) : (
         <View style={styles.footerContainer}>
-          <Button theme="primary" label="写真を選択" onPress={pickImageAsync} />
-          <Button label="この写真を使用" />
+          <Button theme="primary" label="写真を撮影" onPress={takePhotoAsync} />
+          <Button label="ライブラリから選択" onPress={pickImageAsync} />
         </View>
       )}
       <StatusBar style="light" />
